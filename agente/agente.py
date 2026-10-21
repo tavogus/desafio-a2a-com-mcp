@@ -20,6 +20,7 @@ from typing import Any
 
 import uvicorn
 from mcp import Client
+from mcp.client.session import ClientSession
 from mcp.shared.exceptions import MCPError
 from mcp.types import ElicitResult, Implementation, InputRequiredResult
 from starlette.applications import Starlette
@@ -45,7 +46,7 @@ CAMPOS_RESERVA = ("sala", "inicio", "fim", "responsavel")
 
 
 async def elicitation_nao_usada(_contexto: Any, _params: Any) -> ElicitResult:
-    """Declarar o callback anuncia elicitation em form mode.
+    """O callback existe so para o SDK anunciar elicitation.
 
     O ciclo nao passa por aqui. O agente le o input_required cru em
     `session.call_tool(..., allow_input_required=True)` e devolve a
@@ -53,6 +54,33 @@ async def elicitation_nao_usada(_contexto: Any, _params: Any) -> ElicitResult:
     sem pausar a Task.
     """
     raise RuntimeError("a ponte nao responde elicitation dentro do cliente MCP")
+
+
+def _capabilities_somente_form(original: Any) -> Any:
+    """O SDK, ao ver um callback, anuncia form e url. O contrato pede so form."""
+
+    def build(self: ClientSession, version: str) -> Any:
+        caps = original(self, version)
+        elicitation = getattr(caps, "elicitation", None)
+        if elicitation is not None:
+            elicitation.url = None
+        return caps
+
+    return build
+
+
+ClientSession._build_capabilities = _capabilities_somente_form(ClientSession._build_capabilities)  # type: ignore[method-assign]
+
+
+def _exigir_form_sem_url(session: Any) -> None:
+    stamp = getattr(session, "_stamp", None)
+    for cell in getattr(stamp, "__closure__", None) or []:
+        valor = cell.cell_contents
+        if isinstance(valor, dict) and "elicitation" in valor:
+            if valor["elicitation"] != {"form": {}}:
+                raise RuntimeError(f"capability de elicitation inesperada: {valor['elicitation']}")
+            return
+    raise RuntimeError("o cliente MCP nao declarou elicitation em form mode")
 
 
 def propagar_traceparent(valor: str) -> str:
@@ -207,6 +235,7 @@ class Agente:
             )
             try:
                 await cliente.__aenter__()
+                _exigir_form_sem_url(cliente.session)
                 listagem = await cliente.session.list_tools()
                 self._tool = achar_tool_de_reserva(list(listagem.tools))
                 recurso = await cliente.session.read_resource(URI_POLITICA)
