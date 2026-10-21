@@ -64,7 +64,7 @@ Não há SDK de LLM no caminho de execução nem nas dependências. O mesmo text
 Última execução, com os dois processos recém-iniciados. Código de saída 0.
 
 ```
-trace-id desta execucao: 5f34d0a1c162449c12cc2eda6ba4d053
+trace-id desta execucao: 086be8a7a99722119c1812dae8d53c0d
 procure esse valor no stderr do servidor MCP para conferir a propagacao do traceparent.
 
 PASS 01 tools/list traz as tres tools
