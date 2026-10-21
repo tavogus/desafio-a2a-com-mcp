@@ -1,0 +1,4 @@
+mcp==2.3.0
+pydantic==2.14.1
+starlette==1.9.0
+uvicorn==0.54.0
