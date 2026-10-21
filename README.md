@@ -55,6 +55,8 @@ As reservas ficam numa lista em memória, carregada de `dados/reservas.json` na 
 
 O trace-id do header `traceparent` do cliente A2A é copiado para o `_meta.traceparent` de cada request MCP daquela Task, com span-id novo. O servidor escreve no stderr, em toda requisição, `method`, `id` e `traceparent`.
 
+O cliente MCP do SDK, quando recebe um callback de elicitation, anuncia `form` e `url`. O contrato pede só `{"elicitation": {"form": {}}}`. Em `agente/agente.py`, `_capabilities_somente_form` tira o `url` antes do `server/discover`. O callback continua registrado para o SDK saber que há elicitation, mas não responde a pergunta: a pausa da Task é que devolve a escolha ao cliente A2A.
+
 Não há SDK de LLM no caminho de execução nem nas dependências. O mesmo texto de pedido produz o mesmo efeito.
 
 ## Saída do validador
@@ -62,7 +64,7 @@ Não há SDK de LLM no caminho de execução nem nas dependências. O mesmo text
 Última execução, com os dois processos recém-iniciados. Código de saída 0.
 
 ```
-trace-id desta execucao: 5f34d0a1c162449c12cc2eda6ba4d053
+trace-id desta execucao: 086be8a7a99722119c1812dae8d53c0d
 procure esse valor no stderr do servidor MCP para conferir a propagacao do traceparent.
 
 PASS 01 tools/list traz as tres tools
